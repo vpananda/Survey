@@ -1,0 +1,75 @@
+.view-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.view-modal {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 12px rgba(0,0,0,0.2);
+}
+
+.view-modal h3 {
+  margin-bottom: 10px;
+  color: #003566;
+}
+
+.view-modal .description {
+  font-style: italic;
+  margin-bottom: 15px;
+}
+
+.question-block {
+  margin-bottom: 20px;
+  padding: 10px;
+  border-left: 4px solid #003566;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+}
+
+.question-block label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.modal-actions {
+  text-align: right;
+  margin-top: 20px;
+}
+
+.close-btn {
+  background-color: #e74c3c;
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.view-btn {
+  background-color: #3498db; 
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 8px;
+}
+
+.view-btn:hover {
+  background-color: #2980b9;
+}
