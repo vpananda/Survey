@@ -1,0 +1,81 @@
+.manage-responses-container {
+  padding: 5px;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f9f9f9;
+  min-height: 100%;
+
+}
+
+.manage-responses-container h2 {
+  margin-bottom: 20px;
+  color: #333;
+  
+}
+
+.filter-bar {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.filter-bar .react-select__control {
+  min-width: 250px;
+}
+
+.filter-bar button {
+  padding: 8px 20px;
+  background-color: #6f4caf;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.filter-bar button:hover {
+  background-color: #3c449d;
+}
+
+.responses-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.08);
+}
+
+.responses-table th,
+.responses-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  vertical-align: top;
+  text-align: left;
+  font-size: 14px;
+}
+
+.responses-table th {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+.responses-table ul {
+  list-style-type: disc;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.responses-table li {
+  margin-bottom: 4px;
+}
+
+.responses-table td ul {
+  max-height: 150px;
+  /* overflow-y: auto; */
+}
+
+td ul {
+  max-height: 150px;
+  /* overflow-y: auto; */
+  padding-left: 16px;
+}
+
