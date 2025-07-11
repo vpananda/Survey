@@ -693,50 +693,50 @@ def get_question_type_distribution():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@app.route('/api/engagement/trend', methods=['GET'])
-def get_employee_engagement_trend():
-    try:
-        conn, cursor = get_db()
+# @app.route('/api/engagement/trend', methods=['GET'])
+# def get_employee_engagement_trend():
+#     try:
+#         conn, cursor = get_db()
 
-        query = """
-            SELECT 
-                CAST(CreatedDate AS DATE) as Date,
-                COUNT(DISTINCT EmployeeID) as EngagementCount
-            FROM SurveyResponses
-            GROUP BY CAST(CreatedDate AS DATE)
-            ORDER BY Date
-        """
-        cursor.execute(query)
-        results = cursor.fetchall()
-        cursor.close()
-        conn.close()
+#         query = """
+#             SELECT 
+#                 CAST(CreatedDate AS DATE) as Date,
+#                 COUNT(DISTINCT EmployeeID) as EngagementCount
+#             FROM SurveyResponses
+#             GROUP BY CAST(CreatedDate AS DATE)
+#             ORDER BY Date
+#         """
+#         cursor.execute(query)
+#         results = cursor.fetchall()
+#         cursor.close()
+#         conn.close()
 
-        data = [{"date": row[0].strftime("%Y-%m-%d"), "count": row[1]} for row in results]
-        return jsonify({"status": "success", "data": data}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+#         data = [{"date": row[0].strftime("%Y-%m-%d"), "count": row[1]} for row in results]
+#         return jsonify({"status": "success", "data": data}), 200
+#     except Exception as e:
+#         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@app.route('/api/surveys/top-performers', methods=['GET'])
-def get_top_performing_surveys():
-    try:
-        conn, cursor = get_db()
-        query = """
-            SELECT TOP 5 s.SurveyName, COUNT(r.ResponseID) AS ResponseCount
-            FROM Survey s
-            JOIN SurveyResponses r ON s.SurveyID = r.SurveyID
-            GROUP BY s.SurveyName
-            ORDER BY ResponseCount DESC
-        """
-        cursor.execute(query)
-        results = cursor.fetchall()
-        cursor.close()
-        conn.close()
+# @app.route('/api/surveys/top-performers', methods=['GET'])
+# def get_top_performing_surveys():
+#     try:
+#         conn, cursor = get_db()
+#         query = """
+#             SELECT TOP 5 s.SurveyName, COUNT(r.ResponseID) AS ResponseCount
+#             FROM Survey s
+#             JOIN SurveyResponses r ON s.SurveyID = r.SurveyID
+#             GROUP BY s.SurveyName
+#             ORDER BY ResponseCount DESC
+#         """
+#         cursor.execute(query)
+#         results = cursor.fetchall()
+#         cursor.close()
+#         conn.close()
 
-        data = [{"survey": row[0], "count": row[1]} for row in results]
-        return jsonify({"status": "success", "data": data}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+#         data = [{"survey": row[0], "count": row[1]} for row in results]
+#         return jsonify({"status": "success", "data": data}), 200
+#     except Exception as e:
+#         return jsonify({"status": "error", "message": str(e)}), 500
 
 
 #api without filter
@@ -812,6 +812,72 @@ def get_question_count():
 #         return jsonify({"status": "success", "data": surveys})
 #     except Exception as e:
 #         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/employee/engagement-score')
+def get_employee_engagement_score():
+    try:
+        conn, cursor = get_db()
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT EmployeeID)
+            FROM SurveyAssignments
+            WHERE EmployeeID IN (SELECT EmployeeID FROM Employee WHERE RoleID = 2)
+        """)
+        assigned = cursor.fetchone()[0] or 0
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT EmployeeID)
+            FROM SurveyResponses
+            WHERE EmployeeID IN (SELECT EmployeeID FROM Employee WHERE RoleID = 2)
+        """)
+        responded = cursor.fetchone()[0] or 0
+
+        engagement = round((responded / assigned) * 100, 1) if assigned else 0.0
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "engagementPercentage": engagement,
+                "assigned": assigned,
+                "responded": responded
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/surveys/top-performing', methods=['GET'])
+def get_top_performing_surveys():
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        conn, cursor = get_db()
+        date_filter, values = build_date_filter(start_date, end_date, "r.SubmittedDate")
+
+        query = f"""
+            SELECT TOP 5 s.SurveyName, COUNT(r.ResponseID) as Responses
+            FROM Survey s
+            JOIN SurveyResponses r ON s.SurveyID = r.SurveyID
+            WHERE 1=1 {date_filter}
+            GROUP BY s.SurveyID, s.SurveyName
+            ORDER BY Responses DESC
+        """
+        cursor.execute(query, values)
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        data = [{"survey": row[0], "responses": row[1]} for row in rows]
+        return jsonify({"status": "success", "data": data})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 
 
 if __name__ == '__main__':

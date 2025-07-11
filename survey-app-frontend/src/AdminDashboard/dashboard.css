@@ -196,3 +196,120 @@
   background-color: #555;
 }
 
+.scorecard-container {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 36px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scorecard-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.scorecard-circle {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+  width: 160px;
+  height: 160px;
+}
+
+.progress-ring .bg {
+  fill: none;
+  stroke: #eee;
+  stroke-width: 12;
+}
+
+.progress-ring .progress {
+  fill: none;
+  stroke: #4caf50;
+  stroke-width: 12;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s ease;
+}
+
+.scorecard-percent {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: #4caf50;
+}
+
+.scorecard-subtext {
+  margin-top: 20px;
+  font-size: 0.95rem;
+  color: #666;
+}
+
+.top-survey-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.survey-bar-row {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+}
+
+.survey-name {
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.bar-container {
+  position: relative;
+  background-color: #e8e8e8;
+  border-radius: 8px;
+  height: 22px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  background-color: #7b61ff;
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.bar-label {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.full-width-chart {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.chart-box h4 {
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaBars, FaSignOutAlt, FaTachometerAlt, FaWpforms,
-  FaPoll, FaUsersCog
+  FaPoll, FaUsersCog, FaClipboardList
 } from 'react-icons/fa';
 import './sidebar.css';
 
@@ -19,7 +19,7 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user'));
-  const isAdmin = user?.RoleId === 1;
+  const roleId = user?.RoleId;
 
   const handleLogout = () => {
     localStorage.clear();
@@ -31,9 +31,7 @@ const Layout = ({ children }) => {
       {/* Sidebar */}
       <aside className="sidebar">
         <div className={`sidebar-header ${collapsed ? 'collapsed-header' : ''}`}>
-          {!collapsed && (
-            <h2 className="logo-text">SurveyApp</h2>
-          )}
+          {!collapsed && <h2 className="logo-text">SurveyApp</h2>}
           <button
             className={`toggle-btn ${collapsed ? 'center-toggle' : ''}`}
             onClick={() => setCollapsed(!collapsed)}
@@ -44,12 +42,19 @@ const Layout = ({ children }) => {
         </div>
 
         <div className="nav">
-          <SidebarItem to="/admin-dashboard" icon={<FaTachometerAlt />} label="Dashboard" collapsed={collapsed} active={location.pathname} />
-          {isAdmin && (
+          {/* Admin Sidebar */}
+          {roleId === 1 ? (
             <>
+              <SidebarItem to="/admin-dashboard" icon={<FaTachometerAlt />} label="Dashboard" collapsed={collapsed} active={location.pathname} />
               <SidebarItem to="/roles-dashboard" icon={<FaUsersCog />} label="Manage Roles" collapsed={collapsed} active={location.pathname} />
               <SidebarItem to="/manage-surveys" icon={<FaWpforms />} label="Manage Surveys" collapsed={collapsed} active={location.pathname} />
               <SidebarItem to="/manage-responses" icon={<FaPoll />} label="Manage Responses" collapsed={collapsed} active={location.pathname} />
+            </>
+          ) : (
+            <>
+              {/* Employee Sidebar */}
+              <SidebarItem to="/user-dashboard" icon={<FaTachometerAlt />} label="Dashboard" collapsed={collapsed} active={location.pathname} />
+              <SidebarItem to="/my-survey" icon={<FaClipboardList />} label="My Surveys" collapsed={collapsed} active={location.pathname} />
             </>
           )}
         </div>
@@ -60,7 +65,7 @@ const Layout = ({ children }) => {
         </button>
       </aside>
 
-      {/* Content Area */}
+      {/* Main Content */}
       <div className="main-content">
         <header className="topbar">Hello, {user?.EmployeeName}</header>
         <main className="content">{children}</main>

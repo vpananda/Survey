@@ -4,8 +4,8 @@ import StatsCard from './StatsCard';
 import SurveyBarChart from './SurveyBarChart';
 import ParticipationPie from './ParticipationPie';
 import QuestionTypeDonut from './QuestionTypeDonut';
-import EngagementLineChart from './EngagementLineChart';
-import TopSurveysBar from './TopSurveysBar';
+import ScoreCard from './ScoreCard';
+import TopSurveyProgress from './TopSurveyProgress'; 
 
 import './dashboard.css';
 
@@ -14,20 +14,17 @@ const AdminDashboard = () => {
   const [responseData, setResponseData] = useState([]);
   const [participationData, setParticipationData] = useState([]);
   const [questionTypes, setQuestionTypes] = useState([]);
-  
+  const [engagementScore, setEngagementScore] = useState({
+    percentage: 0,
+    assigned: 0,
+    responded: 0,
+  });
+  const [topSurveys, setTopSurveys] = useState([]);
 
-  const [dateFilter, setDateFilter] = useState('7d'); // default
+  const [dateFilter, setDateFilter] = useState('7d');
   const [customRange, setCustomRange] = useState({ from: '', to: '' });
 
-  useEffect(() => {
-    fetchStats(); // Always show overall stats
-  }, []);
-
-  useEffect(() => {
-    fetchChartData(); // Charts respond to filters
-  }, [dateFilter, customRange]);
-
-  // Filter helper
+  // 🔹 Construct date filter query parameters
   const getDateParams = () => {
     if (dateFilter === 'custom' && customRange.from && customRange.to) {
       return {
@@ -43,62 +40,104 @@ const AdminDashboard = () => {
         end_date: end,
       };
     }
-    return {}; // All Time — return nothing
+    return {};
   };
 
-  const fetchStats = async () => {
-    try {
-      const [empStatsRes, surveyRes, responseRes, questionRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/employees/assigned-vs-attended'),
-        axios.get('http://localhost:5000/api/surveys'),
-        axios.get('http://localhost:5000/api/responses/count'),
-        axios.get('http://localhost:5000/api/questions/count'),
-      ]);
+  // 🔹 Fetch static summary stats (no filter applied)
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [empStatsRes, surveyRes, responseRes, questionRes] = await Promise.all([
+          axios.get('http://localhost:5000/api/employees/assigned-vs-attended'),
+          axios.get('http://localhost:5000/api/surveys'),
+          axios.get('http://localhost:5000/api/responses/count'),
+          axios.get('http://localhost:5000/api/questions/count'),
+        ]);
 
-      setStats({
-        assignedEmployees: empStatsRes.data?.data?.assigned || 0,
-        attendedEmployees: empStatsRes.data?.data?.attended || 0,
-        totalSurveys: surveyRes.data?.data?.length || 0,
-        totalResponses: responseRes.data?.data?.total || 0,
-        totalQuestions: questionRes.data?.count || 0,
-      });
-    } catch (err) {
-      console.error('Error fetching stat cards:', err);
-    }
-  };
-
-  const fetchChartData = async () => {
-    try {
-      const params = getDateParams();
-
-      const [barRes, pieRes, donutRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/survey/response-counts', { params }),
-        axios.get('http://localhost:5000/api/participation/combined', { params }),
-        axios.get('http://localhost:5000/api/questions/type-distribution', { params }),
-      ]);
-
-      if (barRes.data.status === 'success') setResponseData(barRes.data.data);
-
-      if (pieRes.data.status === 'success') {
-        setParticipationData({
-          submitted: pieRes.data.data.submitted,
-          notSubmitted: pieRes.data.data.notSubmitted,
+        setStats({
+          assignedEmployees: empStatsRes.data?.data?.assigned || 0,
+          attendedEmployees: empStatsRes.data?.data?.attended || 0,
+          totalSurveys: surveyRes.data?.data?.length || 0,
+          totalResponses: responseRes.data?.data?.total || 0,
+          totalQuestions: questionRes.data?.count || 0,
         });
+      } catch (err) {
+        console.error('Error fetching stat cards:', err);
       }
+    };
 
-      if (donutRes.data.status === 'success') {
-        setQuestionTypes(donutRes.data.data);
+    fetchStats();
+  }, []);
+
+
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        const params = getDateParams();
+
+        const [barRes, pieRes, donutRes] = await Promise.all([
+          axios.get('http://localhost:5000/api/survey/response-counts', { params }),
+          axios.get('http://localhost:5000/api/participation/combined', { params }),
+          axios.get('http://localhost:5000/api/questions/type-distribution', { params }),
+        ]);
+
+        if (barRes.data.status === 'success') setResponseData(barRes.data.data);
+
+        if (pieRes.data.status === 'success') {
+          setParticipationData({
+            submitted: pieRes.data.data.submitted,
+            notSubmitted: pieRes.data.data.notSubmitted,
+          });
+        }
+
+        if (donutRes.data.status === 'success') {
+          setQuestionTypes(donutRes.data.data);
+        }
+
+      
+        try {
+          const topRes = await axios.get('http://localhost:5000/api/surveys/top-performing', { params });
+          if (topRes.data.status === 'success') {
+            setTopSurveys(topRes.data.data);
+          } else {
+            setTopSurveys([]);
+            console.warn('Top survey response not success');
+          }
+        } catch (err) {
+          setTopSurveys([]);
+          console.error('Top survey fetch failed:', err.message);
+        }
+      } catch (err) {
+        console.error('Error fetching chart data:', err);
       }
-    } catch (err) {
-      console.error('Error fetching chart data:', err);
-    }
-  };
+    };
+
+    fetchChartData();
+  }, [dateFilter, customRange]);
+
+  useEffect(() => {
+    const fetchEngagementScore = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/employee/engagement-score');
+        if (res.data.status === 'success') {
+          setEngagementScore({
+            percentage: res.data.data.engagementPercentage,
+            assigned: res.data.data.assigned,
+            responded: res.data.data.responded,
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching engagement score:', err);
+      }
+    };
+
+    fetchEngagementScore();
+  }, []);
 
   return (
     <div className="admin-dashboard">
       <h2>📊 Admin Dashboard</h2>
 
-      {/* Filter */}
       <div className="filter-card">
         <div className="filter-row">
           <label>📅 Filter by Survey Created Date:</label>
@@ -128,7 +167,7 @@ const AdminDashboard = () => {
         )}
       </div>
 
-      {/* Stat Cards */}
+    
       <div className="card-grid">
         <StatsCard title="Assigned Employees" value={stats.assignedEmployees} gradient="linear-gradient(135deg, #7b61ff, #b892ff)" />
         <StatsCard title="Attended Employees" value={stats.attendedEmployees} gradient="linear-gradient(135deg, #4caf50, #81c784)" />
@@ -137,15 +176,7 @@ const AdminDashboard = () => {
         <StatsCard title="Total Questions" value={stats.totalQuestions} gradient="linear-gradient(135deg, #f06292, #f8bbd0)" />
       </div>
 
-      {/* Charts */}
       <div className="dashboard-charts">
-        <div className="chart-box">
-          <h4>Responses Per Survey</h4>
-          <div className="chart-card-scroll">
-            <SurveyBarChart data={responseData} />
-          </div>
-        </div>
-
         <div className="chart-box">
           <h4>Overall Participation</h4>
           <div className="chart-card-scroll">
@@ -159,6 +190,35 @@ const AdminDashboard = () => {
             <QuestionTypeDonut data={questionTypes} />
           </div>
         </div>
+
+        <div className="chart-box">
+          <h4>Employee Engagement</h4>
+          <div className="chart-card-scroll">
+            <ScoreCard
+              percentage={engagementScore.percentage}
+              assigned={engagementScore.assigned}
+              responded={engagementScore.responded}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-charts">
+        <div className="chart-box full-width-chart">
+          <h4>Responses Per Survey</h4>
+          <div className="chart-card-scroll">
+            <SurveyBarChart data={responseData} />
+          </div>
+        </div>
+
+        {topSurveys.length > 0 && (
+          <div className="chart-box full-width-chart">
+            <h4>Top Performing Surveys</h4>
+            <div className="chart-card-scroll">
+              <TopSurveyProgress data={topSurveys} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

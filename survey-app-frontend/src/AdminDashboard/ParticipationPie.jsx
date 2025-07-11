@@ -33,7 +33,7 @@ const ParticipationPie = ({ data }) => {
       plugins: {
         title: {
           display: true,
-          text: 'Survey Participation',
+          // text: 'Survey Participation',
           font: {
             size: 18
         },
