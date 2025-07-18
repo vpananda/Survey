@@ -31,7 +31,7 @@ function App() {
    
       <Route path="/user-dashboard" element={<Layout><UserDashboard /></Layout>} />
       <Route path="/my-survey" element={<Layout><MySurvey /></Layout>} />
-      <Route path="/survey-form" element={<Layout><SurveyForm /></Layout>} />
+      <Route path="/survey-form/:surveyId" element={<SurveyForm />} />
 
 
 

@@ -87,7 +87,6 @@ const CreateSurvey = () => {
       .then(res => res.json())
       .then(data => {
         alert(data.message || 'Survey created successfully!');
-        // Reset form
         setSurveyTitle('');
         setSurveyDesc('');
         setStartDate('');

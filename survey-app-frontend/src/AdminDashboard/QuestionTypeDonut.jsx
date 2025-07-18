@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// Custom color palette
+
 const COLORS = ['#fbc02d', '#9575cd', '#4db6ac', '#ff7043', '#90caf9'];
 
 const QuestionTypeDonut = ({ data }) => {

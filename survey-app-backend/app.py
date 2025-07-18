@@ -877,6 +877,246 @@ def get_top_performing_surveys():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/user/dashboard-summary', methods=['GET'])
+def get_user_dashboard_summary():
+    try:
+        user_id = request.args.get('user_id') 
+        conn, cursor = get_db()
+
+        cursor.execute("""
+            SELECT COUNT(*) FROM SurveyAssignments WHERE EmployeeID = ?
+        """, (user_id,))
+        assigned = cursor.fetchone()[0]
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT SurveyID)
+            FROM SurveyResponses
+            WHERE EmployeeID = ?
+        """, (user_id,))
+        completed = cursor.fetchone()[0]
+
+
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM SurveyQuestionMapping sqm
+            JOIN SurveyAssignments sa ON sqm.SurveyID = sa.SurveyID
+            WHERE sa.EmployeeID = ?
+        """, (user_id,))
+        questions = cursor.fetchone()[0]
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "assignedSurveys": assigned,
+                "completedSurveys": completed,
+                "totalQuestions": questions
+            }
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+@app.route('/api/user/survey-participation', methods=['GET'])
+def get_user_survey_participation():
+    try:
+        user_id = request.args.get('user_id')
+        conn, cursor = get_db()
+
+        cursor.execute("""
+            SELECT s.SurveyName,
+                   CASE WHEN sr.SurveyID IS NOT NULL THEN 'Completed' ELSE 'Pending' END AS Status
+            FROM SurveyAssignments sa
+            JOIN Survey s ON sa.SurveyID = s.SurveyID
+            LEFT JOIN (
+                SELECT DISTINCT SurveyID FROM SurveyResponses WHERE EmployeeID = ?
+            ) sr ON sa.SurveyID = sr.SurveyID
+            WHERE sa.EmployeeID = ?
+        """, (user_id, user_id))
+
+        rows = cursor.fetchall()
+        data = [{"survey": row[0], "status": row[1]} for row in rows]
+
+        return jsonify({"status": "success", "data": data})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/user/dashboard/<int:employee_id>', methods=['GET'])
+def get_user_dashboard(employee_id):
+    try:
+        conn, cursor = get_db()
+
+        cursor.execute("SELECT COUNT(*) FROM SurveyAssignments WHERE EmployeeID = ?", (employee_id,))
+        assigned = cursor.fetchone()[0] or 0
+
+        cursor.execute("SELECT COUNT(DISTINCT SurveyID) FROM SurveyResponses WHERE EmployeeID = ?", (employee_id,))
+        submitted = cursor.fetchone()[0] or 0
+
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM SurveyQuestionMapping sqm
+            JOIN SurveyAssignments sa ON sqm.SurveyID = sa.SurveyID
+            WHERE sa.EmployeeID = ?
+        """, (employee_id,))
+        total_questions = cursor.fetchone()[0] or 0
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "assigned": assigned,
+                "submitted": submitted,
+                "questions": total_questions
+            }
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/user/participation/<int:employee_id>', methods=['GET'])
+def get_user_participation(employee_id):
+    try:
+        conn, cursor = get_db()
+
+        cursor.execute("SELECT COUNT(*) FROM SurveyAssignments WHERE EmployeeID = ?", (employee_id,))
+        assigned = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(DISTINCT SurveyID) FROM SurveyResponses WHERE EmployeeID = ?", (employee_id,))
+        completed = cursor.fetchone()[0]
+
+        pending = assigned - completed
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "assigned": assigned,
+                "completed": completed,
+                "pending": pending
+            }
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/user/trend/<int:employee_id>', methods=['GET'])
+def get_completion_trend(employee_id):
+    try:
+        conn, cursor = get_db()  
+        query = """
+            SELECT FORMAT(sr.SubmittedDate, 'yyyy-MM') AS MonthYear, COUNT(*) AS CompletedCount
+            FROM SurveyResponses sr
+            JOIN SurveyAssignments sa ON sr.SurveyID = sa.SurveyID AND sr.EmployeeID = sa.EmployeeID
+            WHERE sr.EmployeeID = ?
+            GROUP BY FORMAT(sr.SubmittedDate, 'yyyy-MM')
+            ORDER BY MonthYear
+        """
+        cursor.execute(query, (employee_id,))
+        rows = cursor.fetchall()
+
+        data = [{'month': row[0], 'count': row[1]} for row in rows]
+        return jsonify(data)
+    except Exception as e:
+        print("Error in get_completion_trend:", e)
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+@app.route('/api/user/recent-completed/<int:employee_id>', methods=['GET'])
+def get_recent_completed_surveys(employee_id):
+    try:
+        conn, cursor = get_db()
+
+        query = """
+            SELECT TOP 5 sr.SurveyId, s.SurveyName, sr.SubmittedDate
+            FROM SurveyResponses sr
+            JOIN Survey s ON sr.SurveyId = s.SurveyId
+            WHERE sr.EmployeeId = ?
+            ORDER BY sr.SubmittedDate DESC
+        """
+        cursor.execute(query, (employee_id,))
+        rows = cursor.fetchall()
+
+        data = [
+            {
+                'surveyId': row[0],
+                'surveyName': row[1],
+                'submittedDate': row[2].strftime('%Y-%m-%d %H:%M:%S') if row[2] else None
+            }
+            for row in rows
+        ]
+
+        return jsonify(data)
+    
+    except Exception as e:
+        print("Error in get_recent_completed_surveys:", e)
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+
+@app.route('/api/user/engagement-rate/<int:employee_id>', methods=['GET'])
+def get_engagement_rate(employee_id):
+    try:
+        conn, cursor = get_db()
+
+        # Total assigned surveys
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM SurveyAssignments 
+            WHERE EmployeeID = ?
+        """, (employee_id,))
+        total_assigned = cursor.fetchone()[0]
+
+        # Total completed surveys
+        cursor.execute("""
+            SELECT COUNT(DISTINCT SurveyID) 
+            FROM SurveyResponses 
+            WHERE EmployeeID = ?
+        """, (employee_id,))
+        total_completed = cursor.fetchone()[0]
+
+        engagement_rate = round((total_completed / total_assigned) * 100, 2) if total_assigned > 0 else 0
+
+        return jsonify({
+            'assigned': total_assigned,
+            'completed': total_completed,
+            'engagement_rate': engagement_rate
+        })
+    
+    except Exception as e:
+        print("Error in get_engagement_rate:", e)
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+@app.route('/api/user/upcoming-deadlines/<int:employee_id>', methods=['GET'])
+def get_upcoming_deadlines(employee_id):
+    try:
+        conn, cursor = get_db()
+        current_date = datetime.now().date()
+
+        query = """
+            SELECT s.SurveyId, s.SurveyName, s.EndDate
+            FROM SurveyAssignments sa
+            JOIN Survey s ON sa.SurveyId = s.SurveyId
+            WHERE sa.EmployeeID = ? AND s.EndDate >= ? AND s.SurveyId NOT IN (
+                SELECT SurveyId FROM SurveyResponses WHERE EmployeeId = ?
+            )
+        """
+        cursor.execute(query, (employee_id, current_date, employee_id))
+        rows = cursor.fetchall()
+
+        data = [
+            {
+                'surveyId': row[0],
+                'surveyName': row[1],
+                'endDate': row[2].strftime('%Y-%m-%d') if row[2] else None
+            }
+            for row in rows
+        ]
+
+        return jsonify({'status': 'success', 'data': data})
+    
+    except Exception as e:
+        print("Error in get_upcoming_deadlines:", e)
+        return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
+
 
 
 

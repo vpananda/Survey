@@ -24,7 +24,7 @@ const AdminDashboard = () => {
   const [dateFilter, setDateFilter] = useState('7d');
   const [customRange, setCustomRange] = useState({ from: '', to: '' });
 
-  // 🔹 Construct date filter query parameters
+ 
   const getDateParams = () => {
     if (dateFilter === 'custom' && customRange.from && customRange.to) {
       return {
@@ -43,7 +43,6 @@ const AdminDashboard = () => {
     return {};
   };
 
-  // 🔹 Fetch static summary stats (no filter applied)
   useEffect(() => {
     const fetchStats = async () => {
       try {

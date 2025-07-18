@@ -71,7 +71,7 @@ const SurveyForm = () => {
     <div className="survey-form-container">
       <div className="survey-form-header">
         <h2>{surveyTitle}</h2>
-        <button onClick={() => navigate('/user-dashboard')} className="back-button">
+        <button onClick={() => navigate('/my-survey')} className="back-button">
           ← Back
         </button>
       </div>

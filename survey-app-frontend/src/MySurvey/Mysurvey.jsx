@@ -25,9 +25,9 @@ const MySurvey = () => {
       });
   }, [employeeId, navigate]);
 
-  const handleAction = (surveyId) => {
-    navigate(`/Survey/${surveyId}`);
-  };
+ const handleAction = (surveyId) => {
+  navigate(`/survey-form/${surveyId}`);
+};
 
   if (loading) return <p>Loading surveys...</p>;
 
